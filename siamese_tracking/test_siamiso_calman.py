@@ -391,6 +391,7 @@ if __name__ == '__main__':
                         pad = d_search / scale_z
                         s_x = s_z + 2 * pad
                         
+                        # TODO，如果采用了kalm滤波，这里可以用kalm滤波来获取search_map
                         x_crop = get_subwindow_tracking(o_search, [x_t, y_t], search_size, s_x, avg_chans)
                         search = x_crop.unsqueeze(0).cuda()                     
 
@@ -431,7 +432,7 @@ if __name__ == '__main__':
                             x_t += displace_x
                             y_t += displace_y
 
-                            # 更新kf
+                            # 更新kf，TODO：仔细看这里到底要不要更新kf，顺便查看predict在哪里
                             p_n = np.array([[np.float32(x_t)],[np.float32(y_t)]])
                             kf.correct(p_n)
 

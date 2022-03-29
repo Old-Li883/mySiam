@@ -198,7 +198,7 @@ def main():
 
     # [*] train
     half_epoch = (config.SIAMISO.TRAIN.START_EPOCH+config.SIAMISO.TRAIN.END_EPOCH) // 2
-    tensor_writer = SummaryWriter('./tensorborad')
+    tensor_writer = SummaryWriter('./tensorboard')
     for epoch in range(config.SIAMISO.TRAIN.START_EPOCH,
                        config.SIAMISO.TRAIN.END_EPOCH):
         if epoch == half_epoch:
