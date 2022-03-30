@@ -40,15 +40,17 @@ time.sleep(rank * 5)
 
 flag = 0
 # run test scripts -- two epoch for each thread，每个MPI运行两个epoch
-for i in range(1):
+for i in range(5):
     arch = args.arch
     dataset = args.dataset
     try:
 
         # 测试一个epoch多线程
-        epoch_ID += 0
-        flag += 1
-        # epoch_ID += args.threads   # for 16 queue
+        # epoch_ID += 0
+        # flag += 1
+
+        # 多epoch
+        epoch_ID += args.threads   # for 16 queue
     except:
         # 这一句相当于每个MDI thread的epoch_ID的初始化
         epoch_ID = rank % (args.end_epoch - args.start_epoch + 1) + args.start_epoch
@@ -57,8 +59,9 @@ for i in range(1):
     if epoch_ID > args.end_epoch:
         continue
 
-    if flag > 11:
-        continue
+    # 但epoch
+    # if flag > 11:
+    #     continue
 
     # 对应模型地址
     resume = 'snapshot_iso/checkpoint_e{}.pth'.format(epoch_ID)

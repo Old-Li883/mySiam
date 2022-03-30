@@ -44,7 +44,6 @@ def load_gt(path):
     for root, _, files in os.walk(gt_path):
         for f in files:
             target_gt_path = os.path.join(root,f)
-            # print(target_gt_path)
             target_index = int(f.split(".")[0])
             gt = pd.read_table(target_gt_path,sep=',',header=None)
             gt.columns = ['x','y','w','h','frame']
@@ -85,29 +84,20 @@ def load_dataset(path):
 
 
 def get_region(offset, img_size, img, x, y):
-    # print(x,y,img.shape)
     if x <= offset <= y and y + offset < img_size:
-        # print(x,y,offset,img_size)
         img_region = img[y - offset:y + offset + 1, 0:2 * x + 1]
-        # print(1)
     elif x <= offset <= y and y + offset >= img_size:
         img_region = img[2 * y - img_size:img_size, 0:2 * x + 1]
-        # print(2)
     elif y <= offset <= x and x + offset < img_size:
         img_region = img[0:2 * y + 1, x - offset:x + offset + 1]
-        # print(3)
     elif y <= offset <= x and x + offset >= img_size:
         img_region = img[0:2 * y + 1, 2 * x - img_size:img_size]
-        # print(4)
     elif y + offset >= img_size and x + offset >= img_size:
         img_region = img[2 * y - img_size:img_size, 2 * x - img_size:img_size]
-        # print(5)
     elif x < offset and y < offset:
         img_region = img[0:2 * y + 1, 0:2 * x + 1]
-        # print(6)
     else:
         img_region = img[y - offset:y + offset + 1, x - offset:x + offset + 1]
-        # print(7)
 
     return img_region
 
@@ -123,8 +113,6 @@ def pad_image(image, out_size):
     n_pad_y0 = int(n_pad_y / 2)
     n_pad_y1 = n_pad_y - n_pad_y0
 
-    # print(x,y,out_size,n_pad_y0,n_pad_y1,n_pad_x0,n_pad_x1)
-    # print(image.shape)
     padded = np.pad(image, ((n_pad_y0, n_pad_y1), (n_pad_x0, n_pad_x1)),
                     'mean')
         
@@ -208,67 +196,76 @@ def MTA(n, p_old_1, p_old_2, delta):
 def distance(p_1, p_2):
     return math.sqrt((p_1[0] - p_2[0])**2 + (p_1[1] - p_2[1])**2)
 
+
+
+
 # 预定义一些
-kf = cv2.KalmanFilter(4, 2)
-kn = 0
-kf_flag = False
-t_an = 30
-delta = [0, 0]
-# p_old、p_cur、delta都是元组！！！
-def ME_algorithm(n, p_old_1, p_old_2, p_cur, kf, kf_flag, kn, delta):
-    # 返回：是否估计，估计结果（有cur的时候就不接受这个），kalm滤波对象，kf_flag，kn值，delta返回
-    if n == 1:
-        kn = 0
-        kf_flag = False
-        delta = [0, 0]
+# kf = cv2.KalmanFilter(4, 2)
+# kn = 0
+# kf_flag = False
+# t_an = 30
+# delta = [0, 0]
+# # p_old、p_cur、delta都是元组！！！
+# def ME_algorithm(n, p_old_1, p_old_2, p_cur, kf, kf_flag, kn, delta):
+#     # 返回：是否估计，估计结果（有cur的时候就不接受这个），kalm滤波对象，kf_flag，kn值，delta返回
+#     if n == 1:
+#         kn = 0
+#         kf_flag = False
+#         delta = [0, 0]
 
-        # 卡尔曼滤波初始化
-        kf = cv2.KalmanFilter(4,2) # 状态值，观测值
-        kf.measurementMatrix = np.array([[1,0,0,0],[0,1,0,0]],np.float32)
-        kf.transitionMatrix = np.array([[1,0,1,0],[0,1,0,1],[0,0,1,0],[0,0,0,1]], np.float32)
-        kf.processNoiseCov = np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]], np.float32) * 0.003
-        kf.measurementNoiseCov = np.array([[1,0],[0,1]], np.float32) * 1
-        return False, None, kf, kf_flag, kn, delta
+#         # 卡尔曼滤波初始化
+#         kf = cv2.KalmanFilter(4,2) # 状态值，观测值
+#         kf.measurementMatrix = np.array([[1,0,0,0],[0,1,0,0]],np.float32)
+#         kf.transitionMatrix = np.array([[1,0,1,0],[0,1,0,1],[0,0,1,0],[0,0,0,1]], np.float32)
+#         kf.processNoiseCov = np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]], np.float32) * 0.003
+#         kf.measurementNoiseCov = np.array([[1,0],[0,1]], np.float32) * 1
+#         return False, None, kf, kf_flag, kn, delta
 
-    elif n < t_an: # 小于一定帧数，MTA算法
+#     elif n < t_an: # 小于一定帧数，MTA算法
         
-        p_estimate, delta = MTA(n, p_old_1, p_old_2, delta) # 预测，更新delta
-        if p_cur: # 如果有p_cur，则使用p_cur
-            p_n = np.array([[np.float32(p_cur[0])],[np.float32(p_cur[1])]])
-        else: 
-            p_n = np.array([[np.float32(p_estimate[0])],[np.float32(p_estimate[1])]])
+#         p_estimate, delta = MTA(n, p_old_1, p_old_2, delta) # 预测，更新delta
+#         if p_cur: # 如果有p_cur，则使用p_cur更新kf
+#             p_n = np.array([[np.float32(p_cur[0])],[np.float32(p_cur[1])]])
+#         else: 
+#             p_n = np.array([[np.float32(p_estimate[0])],[np.float32(p_estimate[1])]])
 
-        kf.correct(p_n) # 只需要位置，不需要速度哈哈哈
-        return True, p_estimate, kf, kf_flag, kn, delta
+#         kf.correct(p_n) # 只需要位置，不需要速度哈哈哈
+#         predict = kf.predict()
+#         return False, p_estimate, kf, kf_flag, kn, delta
 
-    else:
-        if kf_flag == False:
-            p_estimate, delta = MTA(n, p_old_1, p_old_2, delta) # 
-            p_kalm = kf.predict()
-            if distance(p_kalm, p_estimate) < 4:
-                kn += 1
-                if kn >= 4:
-                    kf_flag = True
-            else:
-                kn = 0
+#     else:
+#         if kf_flag == False:
+#             p_estimate, delta = MTA(n, p_old_1, p_old_2, delta)
 
-            # 更新kf
-            if p_cur: # 如果有p_cur，则使用p_cur
-                p_n = np.array([[np.float32(p_cur[0])], [np.float32(p_cur[1])]])
-            else: # 如果没有，则用p_estimate更新
-                
-                p_n = np.array([[np.float32(p_estimate[0])], [np.float32(p_estimate[1])]])
-            kf.correct(p_n) # 更新卡尔曼滤波参数
 
-            return True, p_estimate, kf, kf_flag, kn, delta
-        else:
-            if p_cur:
-                p_n = np.array([[np.float32(p_cur[0])], [np.float32(p_cur[1])]])
-            else:
-                p_estimate = kf.predict()
-                p_n = np.array([[np.float32(p_estimate[0])], [np.float32(p_estimate[1])]])
-            kf.correct(p_n)
-            return True, p_estimate, kf, kf_flag, kn, delta
+#             # 更新kf
+#             if p_cur: # 如果有p_cur，则使用p_cur
+#                 p_n = np.array([[np.float32(p_cur[0])], [np.float32(p_cur[1])]])
+#             else: # 如果没有，则用p_estimate更新
+#                 p_n = np.array([[np.float32(p_estimate[0])], [np.float32(p_estimate[1])]])
+
+#             kf.correct(p_n) # 更新卡尔曼滤波参数
+
+#             # 先更新再预测
+#             p_kalm = kf.predict()
+#             if not p_cur:
+#                 p_cur = p_estimate
+#             if distance(p_kalm, p_cur) < 4:
+#                 kn += 1
+#                 if kn >= 4:
+#                     kf_flag = True
+#             else:
+#                 kn = 0
+
+#             return False, p_estimate, kf, kf_flag, kn, delta
+#         else:
+#             p_estimate = kf.predict()
+#             if p_cur:
+#                 p_n = np.array([[np.float32(p_cur[0])], [np.float32(p_cur[1])]])
+#             else:
+#                 p_n = np.array([[np.float32(p_estimate[0])], [np.float32(p_estimate[1])]])
+#             kf.correct(p_n)
+#             return True, p_estimate, kf, kf_flag, kn, delta
 
 
 if __name__ == '__main__':
@@ -290,15 +287,15 @@ if __name__ == '__main__':
     backbone = TestNet()
 
     # run
-    args = parse_args()
-    net = models.__dict__[
-        config.SIAMISO.TRAIN.MODEL](embedding_net=backbone) 
-    net = load_pretrain(net, args.resume)
+    # args = parse_args()
+    # net = models.__dict__[
+    #     config.SIAMISO.TRAIN.MODEL](embedding_net=backbone) 
+    # net = load_pretrain(net, args.resume)
 
     # test
-    # net = models.__dict__[
-    #     "SiameseISO"](embedding_net=backbone) 
-    # net = load_pretrain(net, "./snapshot_iso/checkpoint_e47.pth")
+    net = models.__dict__[
+        "SiameseISO"](embedding_net=backbone) 
+    net = load_pretrain(net, "./snapshot_iso/checkpoint_e47.pth")
 
 
 
@@ -308,7 +305,6 @@ if __name__ == '__main__':
     # 加载数据
     dataset = load_dataset("/mnt3/lichenhao/VISO/validation data/")
     video_keys = list(dataset.keys()).copy()
-    # print(video_keys)
 
     transform = transforms.ToTensor()
 
@@ -319,24 +315,23 @@ if __name__ == '__main__':
                             np.hanning(int(score_size)))
     window /= window.sum()
 
-    # result_path = './result_iso' # test
-    result_path = args.result_path # run
+    result_path = './result_iso_noNeg' # test
+    # result_path = args.result_path # run
     if not exists(result_path):
         os.makedirs(result_path)
     
-    train_epoch_name = args.resume.split("/")[-1] # run
-    # train_epoch_name = "47" # test
+    # train_epoch_name = args.resume.split("/")[-1] # run
+    train_epoch_name = "47" # test
 
     result_path = os.path.join(str(result_path),str(train_epoch_name))
     if not exists(result_path):
         os.makedirs(result_path)
 
-    # print(result_path,flush=True)
     #加上时间，test
-    # nowtime = time.time()
-    # result_path = os.path.join(result_path, str(nowtime))
-    # if not exists(result_path):
-    #     os.makedirs(result_path)
+    nowtime = time.time()
+    result_path = os.path.join(result_path, str(nowtime))
+    if not exists(result_path):
+        os.makedirs(result_path)
 
     scale_z = 1
     s_z = 0
@@ -352,12 +347,15 @@ if __name__ == '__main__':
         # result_video_path = os.path.join(result_path,v_name)
         # if not exists(result_video_path):
         #     os.makedirs(result_video_path)
-            # print("test {0} video".format(v_name))
 
+        peak_value_txt = result_path + '/' + 'peak_value.txt'
+        pv_txt = open(peak_value_txt, 'w')
         for tar, gt in video_target_frame.items():
 
             track_flag = 0
-            result_tar_path = result_path+'/' +str(v_name) + '_'+ str(tar)
+            result_tar_path = result_path +'/' +str(v_name) + '_'+ str(tar)
+
+            pv_txt.write(str(v_name) + ":" + str(tar) +"\n")
 
             if not exists(result_tar_path):
                 os.makedirs(result_tar_path)
@@ -365,6 +363,7 @@ if __name__ == '__main__':
                 if not exists(img_path):
                     os.makedirs(img_path)
 
+            
             result_tar_path_txt = result_tar_path + '/groundtruth_rect.txt'
             with open(result_tar_path_txt, "w") as fin:
             # img为图片名
@@ -378,11 +377,12 @@ if __name__ == '__main__':
 
                     img_path = os.path.join(videos_path,img)
 
+                    # 进入跟踪状态
                     if track_flag != 0:
-
-                        # 跟踪计数
+                        # 跟踪帧数计数
                         count_flag += 1
 
+                        # 时间计时
                         time_start = time.time()
                         
                         o_search = np.array(cv2.imread(img_path, 1), dtype=np.uint8)
@@ -391,8 +391,11 @@ if __name__ == '__main__':
                         pad = d_search / scale_z
                         s_x = s_z + 2 * pad
                         
-                        # TODO，如果采用了kalm滤波，这里可以用kalm滤波来获取search_map
-                        x_crop = get_subwindow_tracking(o_search, [x_t, y_t], search_size, s_x, avg_chans)
+                        # TODO，如果采用了kalm滤波，这里可以用kalm滤波来获取search_map，做个判断
+                        if iskalman_work:
+                            x_crop = get_subwindow_tracking(o_search, [predict[0][0], predict[1][0]], search_size, s_x, avg_chans)
+                        else:
+                            x_crop = get_subwindow_tracking(o_search, [x_t, y_t], search_size, s_x, avg_chans)
                         search = x_crop.unsqueeze(0).cuda()                     
 
 
@@ -416,33 +419,85 @@ if __name__ == '__main__':
                                                     prediction.shape)
 
                         # TODO: 找出相应的响应值，判断使用
-                        respond = prediction[position[0]][position[1]]
-                        if response > 0.5: # 0.5待修改
+                        peak_value = prediction[position[0]][position[1]]
+                        # print(peak_value)
+                        pv_txt.write(str(peak_value)+'\n')
 
-                            x_pre_2 = x_t - displace_x
-                            y_pre_2 = y_t - displace_y
-                            
-                            # 计算偏移
-                            displace_x = (position[1] - prediction.shape[1] // 2) * s_x / search_size
-                            displace_y = (position[0] - prediction.shape[0] // 2) * s_x / search_size
-                            
-                            # 更新kf和delta   
-                            is_estimate, _, kf, kf_flag, kn, delta = ME_algorithm(count_flag, (x_t, y_t), (x_pre_2, y_pre_2), (x_t + displace_x, y_t + displace_y), kf, kf_flag, kn, delta)
+                        # 网络预测值
+                        # 计算偏移
+                        displace_x = (position[1] - prediction.shape[1] // 2) * s_x / search_size
+                        displace_y = (position[0] - prediction.shape[0] // 2) * s_x / search_size
 
+                        if iskalman_work:
+                            x_t = predict[0][0] + displace_x
+                            y_t = predict[1][0] + displace_y
+                        else:
                             x_t += displace_x
                             y_t += displace_y
 
-                            # 更新kf，TODO：仔细看这里到底要不要更新kf，顺便查看predict在哪里
-                            p_n = np.array([[np.float32(x_t)],[np.float32(y_t)]])
-                            kf.correct(p_n)
+                        x_t = round(max(0,x_t))
+                        x_t = round(min(img_size-1, x_t))
+                        y_t = round(max(0,y_t))
+                        y_t = round(min(img_size-1, y_t))
 
+                        if iskalman_work:
+                            kalm_bbox = [predict[0][0], predict[1][0], w, h] # 在上一帧时kalm滤波预测的这一帧的坐标
+
+                            if peak_value > occlusion_threshold:
+                                # 没有遮挡
+                                trace_array.append((x_t, y_t))
+                                kf.correct(np.array([[np.float32(x_t)],[np.float32(y_t)]])) # 更新kalm滤波
+                            else:
+                                # 如果遮挡就用上一帧时预测的kalm滤波
+                                x_t = kalm_bbox[0]
+                                y_t = kalm_bbox[1]
+                            predict = kf.predict() # kalm滤波预测下一帧的值
                         else:
-                            # p_cur为None
-                            is_estimate, new_pos, kf, kf_flag, kn, delta = ME_algorithm(count_flag, (x_t, y_t), (x_t - displace_x, y_t - displace_y), None, kf, kf_flag, kn, delta)
-                            
-                            x_t = new_pos[0]
-                            y_t = new_pos[1]
+                            if len(trace_array) > 4:
+                                dx = 0
+                                dy = 0
 
+                                # 用最后4个结果，计算速度并累加到上一帧的结果上，形成下一帧结果
+                                for i in range(-5, -1):
+                                    dx += trace_array[i + 1][0] - trace_array[i][0]
+                                    dy += trace_array[i + 1][1] - trace_array[i][1]
+                                pre_bbox = [
+                                    x_t + dx / 4, y_t + dy / 4,
+                                    w, h
+                                ]
+
+                                if peak_value < 0.001: # 两个值不一样
+                                    x_t = pre_bbox[0]
+                                    y_t = pre_bbox[1]
+                                    isocclution = True
+                                else:
+                                    if isocclution: # 如果遮挡了，就到了一定的帧数后集体加入
+                                        if occlution_index != 0: # 如果是第一次遮挡
+                                            tem_trace_array.append((x_t, y_t))
+                                        occlution_index += 1
+
+                                        if occlution_index == 6:
+                                            trace_array.extend(tem_trace_array)
+                                            isocclution == False
+
+                                    else:
+                                        trace_array.append((x_t, y_t))
+
+                            else:
+                                trace_array.append((x_t, y_t))
+
+                            # 这里的predict是在上一帧用kalm滤波预测的这一帧物体位置
+                            # 计算kalm预测值和这一帧的预测值的距离
+                            if (abs(predict[0][0] - x_t) < 2) and (abs(predict[1][0] - y_t) < 2):
+                                kalman_work_num += 1
+                                if kalman_work_num == 3:
+                                    iskalman_work = True
+                                    kalman_work_num = 0
+                            else:
+                                kalman_work_num = 0
+
+                            kf.correct(np.array([[np.float32(x_t)],[np.float32(y_t)]])) # 更新kalm滤波
+                            predict = kf.predict() # kalm滤波预测下一帧的值
 
                         x_t = round(max(0,x_t))
                         x_t = round(min(img_size-1, x_t))
@@ -459,7 +514,7 @@ if __name__ == '__main__':
 
                     if str(gt[0].name) == img: 
 
-                        # 跟踪计数
+                        # 跟踪帧数计数
                         count_flag += 1
 
                         # 图片路径
@@ -468,7 +523,7 @@ if __name__ == '__main__':
                         # 从左上角坐标转到中心
                         x_t = int(gt[0].iloc[0] + gt[0].iloc[2] // 2) 
                         y_t = int(gt[0].iloc[1] + gt[0].iloc[3] // 2)
-                        w, h = gt[0].iloc[2],gt[0].iloc[3]
+                        w, h = gt[0].iloc[2], gt[0].iloc[3]
                         fin.write(','.join([str(x_t-w//2),str(y_t-h//2),str(w),str(h)]))
                         fin.write('\n')
 
@@ -482,10 +537,23 @@ if __name__ == '__main__':
                         
                         track_flag = 1
                         
+                        # 卡尔曼滤波初始化
+                        kf = cv2.KalmanFilter(4,2) # 状态值，观测值
+                        kf.measurementMatrix = np.array([[1,0,0,0],[0,1,0,0]],np.float32)
+                        kf.transitionMatrix = np.array([[1,0,1,0],[0,1,0,1],[0,0,1,0],[0,0,0,1]], np.float32)
+                        kf.processNoiseCov = np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]], np.float32) * 0.003
+                        kf.measurementNoiseCov = np.array([[1,0],[0,1]], np.float32) * 1
 
-                        # 初始化kf，ME_algorithm得在count_flag加完后
-                        is_estimate, new_pos, kf, kf_flag, kn, delta = ME_algorithm(count_flag, (x_t, y_t), (x_t - displace_x, y_t - displace_y), None, kf, kf_flag, kn, delta)
-                # break
+                        trace_array = [] # 计算速度列表
+                        tem_trace_array = []
+                        predict = [[0], [0]] # kalm滤波预测值
+                        iskalman_work = False # kalm滤波是否工作
+                        kalman_work_num = 0 # kalm计数帧
+                        occlution_index = 0 # 遮挡帧数
+                        occlusion_threshold = 0.0015 # 遮挡阈值
+                        isocclution = False
 
+                        trace_array.append((x_t, y_t))
+                        kf.correct(np.array([[np.float32(x_t)],[np.float32(y_t)]]))
 
-
+    pv_txt.close()
